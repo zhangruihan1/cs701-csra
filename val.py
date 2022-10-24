@@ -5,10 +5,10 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from pipeline.resnet_csra import ResNet_CSRA
-from pipeline.vit_csra import VIT_B16_224_CSRA, VIT_L16_224_CSRA, VIT_CSRA
+# from pipeline.vit_csra import VIT_B16_224_CSRA, VIT_L16_224_CSRA, VIT_CSRA
 from pipeline.dataset import DataSet
 from utils.evaluation.eval import evaluation
-from utils.evaluation.eval import WarmUpLR
+# from utils.evaluation.eval import WarmUpLR
 from tqdm import tqdm
 
 
@@ -25,6 +25,8 @@ def Args():
     parser.add_argument("--test_aug", default=[], type=list)
     parser.add_argument("--img_size", default=448, type=int)
     parser.add_argument("--batch_size", default=16, type=int)
+
+    parser.add_argument("--cutmix", default=None, type=str)
 
     args = parser.parse_args()
     return args
@@ -54,7 +56,19 @@ def val(args, model, test_loader, test_file):
             )
     
     # cal_mAP OP OR
-    evaluation(result=result_list, types=args.dataset, ann_path=test_file[0])
+    # evaluation(result=result_list, types=args.dataset, ann_path=test_file[0])
+    # print(result_list)
+    pred = ''
+    for dic in result_list:
+        img = dic['file_name'] + '.jpg'
+        pp = dic['scores']
+        pred += img
+        for k, p in enumerate([1, 2, 4, 5, 6, 7, 15, 17, 18, 19, 20, 21, 22, 23, 24, 29, 56, 63, 64, 69]):
+            if pp[p - 1] > 0.5:
+                pred += ' ' + str(k)
+        pred += '\n'
+    with open('../cs701/public/submission/label.txt', 'w') as f:
+        f.write(pred)
 
 
 
@@ -85,6 +99,8 @@ def main():
         test_file = ['data/coco/val_coco2014.json']
     if args.dataset == "wider":
         test_file = ['data/wider/test_wider.json']
+    if args.dataset == 'public':
+        test_file = ['data/public/val.json']
 
 
     test_dataset = DataSet(test_file, args.test_aug, args.img_size, args.dataset)
